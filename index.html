@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>斗罗大陆 · 寒蝉雨传</title>
+<style>
+:root{
+  --bg:#0a0e1a; --panel:#111827; --panel2:#1a2233; --border:#26344a;
+  --text:#dbe7f5; --dim:#8fa6c4; --accent:#7dd3fc; --accent2:#38bdf8;
+  --user:#1e3a5f; --ai:#141c2b;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(1200px 800px at 20% -10%,#16233c 0%,var(--bg) 60%);
+  color:var(--text); font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.75; overflow:hidden;
+}
+.app{display:flex;flex-direction:column;height:100vh;max-width:980px;margin:0 auto;padding:12px;gap:10px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;
+  background:linear-gradient(180deg,#16233c,#111827);border:1px solid var(--border);border-radius:14px;flex-wrap:wrap}
+.title{font-size:15px;font-weight:600;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+button{
+  background:var(--panel2);color:var(--text);border:1px solid var(--border);
+  border-radius:9px;padding:7px 12px;font-size:13px;cursor:pointer;transition:.15s;
+  font-family:inherit;
+}
+button:hover{background:#22304a;border-color:#3a5273}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:linear-gradient(180deg,#2b6cb0,#1e4e8c);border-color:#3b82f6;color:#fff}
+button.primary:hover{background:linear-gradient(180deg,#3b82f6,#2563eb)}
+main{flex:1;overflow-y:auto;padding:6px 4px;scroll-behavior:smooth}
+main::-webkit-scrollbar{width:8px}
+main::-webkit-scrollbar-thumb{background:#26344a;border-radius:4px}
+.msg{display:flex;flex-direction:column;margin:14px 0;animation:fade .25s ease;align-items:flex-start}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.user{align-items:flex-end}
+.bubble{max-width:86%;padding:13px 17px;border-radius:14px;white-space:pre-wrap;
+  word-break:break-word;border:1px solid var(--border)}
+.msg.user .bubble{background:var(--user);border-color:#2c5282;border-bottom-right-radius:4px}
+.msg.ai .bubble{background:var(--ai);border-bottom-left-radius:4px}
+.msg.sys .bubble{background:#1c1a12;border-color:#4a3f1a;color:#e0c98a;font-size:13px;
+  max-width:100%;text-align:center;margin:0 auto;align-self:center}
+footer{display:flex;flex-direction:column;gap:8px}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{font-size:12px;padding:5px 10px;background:#111a2b}
+.inputbar{display:flex;gap:8px;align-items:flex-end}
+textarea{
+  flex:1;min-height:56px;max-height:180px;resize:vertical;background:var(--panel);
+  color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px 14px;
+  font-family:inherit;font-size:15px;line-height:1.6;outline:none;
+}
+textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+dialog{
+  border:1px solid var(--border);background:var(--panel);color:var(--text);
+  border-radius:16px;padding:22px;max-width:520px;width:92vw;
+}
+dialog::backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
+dialog h2{margin:0 0 16px;font-size:17px;color:var(--accent)}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:13px;color:var(--dim);margin-bottom:5px}
+.field input,.field select{
+  width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);
+  border-radius:9px;padding:9px 11px;font-family:inherit;font-size:14px;outline:none;
+}
+.field input:focus,.field select:focus{border-color:var(--accent2)}
+.hint{font-size:12px;color:var(--dim);line-height:1.6;margin-top:5px}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.typing{display:inline-block;color:var(--accent);font-size:13px}
+.typing::after{content:"…";animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}100%{content:""}}
+
+/* ===== 选项按钮 ===== */
+.optbar{
+  display:flex;flex-direction:column;gap:6px;margin-top:10px;
+  max-width:86%;width:100%;
+}
+.optbtn{
+  text-align:left;padding:10px 15px;font-size:13.5px;
+  background:#0f1a2b;border:1px solid var(--border);border-radius:10px;
+  cursor:pointer;line-height:1.65;white-space:normal;word-break:break-word;
+  color:var(--text);font-family:inherit;transition:.15s;
+}
+.optbtn:hover:not(:disabled){
+  background:#16273f;border-color:var(--accent2);color:var(--accent);
+}
+.optbtn:disabled{opacity:.42;cursor:not-allowed}
+.optbtn .num{
+  display:inline-block;min-width:18px;margin-right:6px;
+  color:var(--accent2);font-weight:600;
+}
+
+@media(max-width:600px){
+  .app{padding:8px}
+  .title{font-size:13px}
+  .actions button{padding:6px 9px;font-size:12px}
+}
+
+/* ===== 徒弟面板 ===== */
+dialog.roster{
+  max-width:860px;width:96vw;max-height:88vh;padding:0;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.roster-head{
+  padding:16px 22px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.roster-head h2{margin:0;font-size:17px;color:var(--accent)}
+.roster-tabs{display:flex;gap:6px}
+.roster-tabs button{font-size:12px;padding:5px 11px;background:#0d1523}
+.roster-tabs button.active{background:linear-gradient(180deg,#2b6cb0,#1e4e8c);
+  border-color:#3b82f6;color:#fff}
+.roster-body{
+  flex:1;overflow-y:auto;padding:16px 22px 22px;
+}
+.roster-body::-webkit-scrollbar{width:8px}
+.roster-body::-webkit-scrollbar-thumb{background:#26344a;border-radius:4px}
+.roster-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;
+}
+.dcard{
+  background:linear-gradient(180deg,#141d2e,#0f1727);
+  border:1px solid var(--border);border-radius:12px;padding:13px 15px;
+  cursor:pointer;transition:.18s;position:relative;overflow:hidden;
+}
+.dcard:hover{border-color:var(--accent2);transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(56,189,248,.12)}
+.dcard .name{font-size:15px;font-weight:600;color:#e8f3ff;display:flex;
+  align-items:center;gap:6px;flex-wrap:wrap}
+.dcard .wuhun{font-size:12px;color:var(--dim);margin-top:3px}
+.dcard .heart{
+  font-size:11px;padding:2px 7px;border-radius:20px;
+  background:rgba(56,189,248,.12);color:var(--accent);border:1px solid rgba(56,189,248,.3);
+}
+.dcard .heart.established{
+  background:rgba(255,120,180,.12);color:#ff9ec0;border-color:rgba(255,120,180,.35);
+}
+.dcard .bar{
+  margin-top:9px;height:5px;border-radius:3px;background:#1b2537;overflow:hidden;
+}
+.dcard .bar-fill{
+  height:100%;background:linear-gradient(90deg,#38bdf8,#a78bfa);
+  transition:width .3s;
+}
+.dcard .meta{
+  margin-top:6px;display:flex;justify-content:space-between;
+  font-size:11px;color:var(--dim);
+}
+.ddetail{display:none}
+.ddetail.on{display:block}
+.ddetail .back{
+  font-size:12px;padding:5px 10px;background:#111a2b;margin-bottom:14px;
+}
+.ddetail .dname{
+  font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px;
+}
+.ddetail .dsub{
+  font-size:13px;color:var(--dim);margin-bottom:14px;
+}
+.detail-block{
+  background:#0e1626;border:1px solid var(--border);border-radius:10px;
+  padding:12px 15px;margin-bottom:11px;
+}
+.detail-block .k{
+  font-size:12px;color:var(--accent2);margin-bottom:5px;font-weight:600;
+  letter-spacing:.5px;
+}
+.detail-block .v{font-size:13.5px;color:var(--text);line-height:1.75}
+.tagline{
+  display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
+  background:rgba(56,189,248,.12);color:var(--accent);
+  border:1px solid rgba(56,189,248,.3);margin-right:5px;
+}
+.tagline.established{
+  background:rgba(255,120,180,.12);color:#ff9ec0;border-color:rgba(255,120,180,.35);
+}
+.tagline.off{
+  background:rgba(120,120,120,.12);color:#8fa6c4;border-color:rgba(120,120,120,.3);
+}
+.empty-tip{
+  text-align:center;color:var(--dim);font-size:13px;padding:30px 0;
+}
+</style>
+<link rel="manifest" href="./manifest.json" /> <meta name="theme-color" content="#111827" /> <meta name="apple-mobile-web-app-capable" content="yes" /> <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> <meta name="apple-mobile-web-app-title" content="寒蝉雨传" /> <link rel="apple-touch-icon" href="./icon-192.png" />
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">❄️ 斗罗大陆 · 寒蝉雨传 <span id="auto-save-tip" style="font-size:11px;color:#5a7a9a;margin-left:8px;font-weight:normal"></span></div>
+    <div class="actions">
+      <button id="btn-roster">📖 徒弟面板</button>
+      <button id="btn-save">存档</button>
+      <button id="btn-load">读档</button>
+      <button id="btn-export">导出</button>
+      <button id="btn-undo">撤回</button>
+      <button id="btn-regen">重说</button>
+      <button id="btn-reset">重开</button>
+      <button id="btn-stash">偷衣机制：开</button>
+      <button id="btn-settings">⚙ 设置</button>
+    </div>
+  </header>
+
+  <main id="chat"></main>
+
+  <footer>
+    <div class="quick">
+      <button data-cmd="（开启修罗场）">开启修罗场</button>
+      <button data-cmd="（关闭修罗场）">关闭修罗场</button>
+      <button data-cmd="（查看好感度）">查看好感度</button>
+      <button data-cmd="（查看后宫）">查看后宫</button>
+      <button data-cmd="（查看徒弟名录）">查看徒弟名录</button>
+    </div>
+    <div class="inputbar">
+      <textarea id="input" placeholder="输入你的行动，或点击上方选项按钮。Enter 发送，Shift+Enter 换行。"></textarea>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button id="btn-send" class="primary" style="padding:11px 18px">发送</button>
+        <button id="btn-stop" style="display:none">停止</button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<dialog id="dlg">
+  <h2>API 设置</h2>
+  <div class="field">
+    <label>接口地址（Base URL）</label>
+    <input id="cfg-url" list="url-list" placeholder="https://api.deepseek.com/v1" />
+    <datalist id="url-list">
+      <option value="https://api.deepseek.com/v1">DeepSeek</option>
+      <option value="https://api.openai.com/v1">OpenAI</option>
+      <option value="https://api.moonshot.cn/v1">Moonshot 月之暗面</option>
+      <option value="https://dashscope.aliyuncs.com/compatible-mode/v1">通义千问</option>
+      <option value="https://open.bigmodel.cn/api/paas/v4">智谱 GLM</option>
+      <option value="https://api.siliconflow.cn/v1">硅基流动</option>
+      <option value="https://openrouter.ai/api/v1">OpenRouter</option>
+    </datalist>
+    <div class="hint">填到 /v1 或 /v4 为止，不要带 /chat/completions</div>
+  </div>
+  <div class="field">
+    <label>API Key</label>
+    <input id="cfg-key" type="password" placeholder="sk-..." />
+    <div class="hint">仅保存在你本机浏览器中，不会上传到任何第三方</div>
+  </div>
+  <div class="field">
+    <label>模型名</label>
+    <input id="cfg-model" placeholder="deepseek-chat" />
+    <div class="hint">如 deepseek-chat / gpt-4o / moonshot-v1-128k / glm-4-plus</div>
+  </div>
+  <div class="field">
+    <label>历史记忆轮数</label>
+    <input id="cfg-history" type="number" min="4" max="80" value="20" />
+    <div class="hint">发给 AI 的最近对话条数，越大越连贯但越费 token</div>
+  </div>
+  <div class="dialog-actions">
+    <button id="btn-cancel">取消</button>
+    <button id="btn-ok" class="primary">保存并开始</button>
+  </div>
+</dialog>
+
+<dialog id="roster-dlg" class="roster">
+  <div class="roster-head">
+    <h2>📖 徒弟面板</h2>
+    <div class="roster-tabs">
+      <button class="tab active" data-tab="all">全部徒弟</button>
+      <button class="tab" data-tab="harem">后宫名单</button>
+      <button class="tab" data-tab="unlocked">已确立</button>
+    </div>
+    <button id="roster-close">关闭</button>
+  </div>
+  <div class="roster-body">
+    <div id="roster-grid" class="roster-grid"></div>
+    <div id="roster-detail" class="ddetail"></div>
+  </div>
+</dialog>
+
+<script type="text/plain" id="system-prompt">
+你是文字冒险游戏《斗罗大陆》的主持人，也就是GM。世界锚定斗罗大陆第一部。你负责扮演所有NPC、裁定行动结果、维护数值系统。玩家角色已固定，无需询问角色信息，但开场前必须先让玩家选择时间段。
+
+═══════════════════════════
+一、输出符号规范（最高优先级）
+═══════════════════════════
+你的所有输出必须使用纯文本与中文标点，严禁使用任何 Markdown 符号。
+
+禁止使用的符号包括但不限于：
+星号，井号，反引号，大于号作为引用，方括号用于强调，下划线强调，波浪线强调，竖线表格，短横线用于列表或分割。
+
+正确做法：
+强调用中文引号「」或【】。
+列表用中文数字加顿号，如一、二、三。
+分隔用空行或中文横线。
+状态栏用「字段名：内容」的形式，每项一行或用全角竖线 ｜ 分隔。
+不要输出任何 HTML 标签。
+
+例外：状态栏中允许使用全角竖线、emoji、以及冒号、顿号、句号、括号等中文标点。
+
+═══════════════════════════
+二、玩家角色卡（已固定，不得更改）
+═══════════════════════════
+姓名：寒蝉雨
+性别：女
+年龄：18
+性取向：同性恋。她只对女性动心。对男性，无论何种意义上的喜欢都绝无可能。不是厌恶，而是天然的无感与疏离，如同看见路边的石头。这一点贯穿始终，任何男性NPC都不可能进入她的感情线。
+出身：霜月
+武魂：第一武魂「月」，第二武魂「霜冰」，双生武魂，先天魂力20级，神赐
+当前魂力：99级，封号斗罗级
+魂环配置：由你根据剧情合理设定。建议月武魂与霜冰武魂各配高年限魂环，可含十万年。
+身份：霜月月下庭出身。她的人生分为两段，离开霜月后独自游历大陆的岁月，以及陆续收下14位女徒弟之后的岁月。这两段人生中，她的心境、羁绊、处境截然不同。她的双生武魂本质是月神与冰神的神性残留，她并非普通魂师，而是两位外神在斗罗世界的代言人。
+外貌：永远定格在18岁最美的瞬间。银白长发如月华倾泻，瞳色淡蓝近银，肌肤透澈如冰晶，气质清冷出尘，仿佛从月光中走出。因霜月体质，永远不显老。
+
+═══════════════════════════
+三、霜月设定（完整世界观，不得违背）
+═══════════════════════════
+位置：斗罗大陆极北雪原深处，冰封山脉之后的悬空浮岛群。悬于云层之上，终年极光与月光笼罩。入口仅在每月满月夜显现于特定冰镜倒影中。
+
+地貌：
+一、中央月陨湖。水如镜只映月，湖底星尘砂夜泛蓝光。
+二、霜月森林。遍生冰魄银杉，栖息十万年月隐冰凰。
+三、北端黄泉冰原。地面天然冰晶彼岸花图案，为生死交汇之地。
+四、边缘悬冰崖。崖下无尽云海。
+
+气候：终年飘雪，雪未落地即融。一年三百天可见月，日光永被云遮，白昼如黄昏。
+
+居民：全为女性，不足三千人，散居浮岛冰晶村落。天生亲近月光，武魂必带冰霜或月光属性，体魄纯澈者可觉醒双生武魂。信奉月母，冬至行月祭，投冰晶彼岸花入湖。不与大陆建交，迷途者赠冰晶信物送返，记忆渐模糊。
+
+外貌永恒：衰老但不显老。灵魂会疲惫苍老，皮囊永远定格在生命中最美的瞬间，至死不变。死亡称「褪月」，遗体化为冰晶融入大地或湖底，无尸骨无腐朽。
+
+情感与子嗣：只与同性相爱，伴侣于月陨湖交换冰晶花戒。欲得子嗣需双月同天之夜行「月华授生」秘法，以月母之力从两人灵魂各取一缕精魂，于湖心星尘砂中孕育，二十七日后冰晶花苞绽放得女婴。代价是提供精魂较多者于孩子满月后归于月母怀抱。
+
+霜月之庭：霜月唯一政权、信仰与军事核心。由四殿组成。
+一、月祭司殿。七人，终生不婚，首领称月首。
+二、守月卫殿。约二百人，首领称持弓者。
+三、织月殿。约百人，掌民生传承。
+四、月下庭。无固定编制，司对外事务。
+总部为月陨湖中央悬浮的月母神殿。
+
+寒蝉雨与霜月的关系：她出身月下庭，因双生武魂与神赐先天魂力被月母神殿视为异数。18岁这年，她决定离开霜月，前往大陆历练。而她在游历中收下的14位徒弟，正陆续成为她生命中最深的羁绊。
+
+═══════════════════════════
+四、可选时间段（开场必选，共3个）
+═══════════════════════════
+开场时，你必须先列出以下时间段供玩家选择，等待玩家回复后再进入正片。
+
+编号一，初出霜月。
+说明：寒蝉雨刚离开霜月，独自踏上大陆，尚未收任何徒弟。
+建议起始地点：霜月出口，冰封山脉之外。
+徒弟收徒进度：0位弟子，需逐一结识并收为徒。
+
+编号二，大赛时期。这是默认选项。
+说明：全大陆高级魂师学院精英大赛，各方势力汇聚。
+建议起始地点：天斗城，或大赛会场。
+徒弟收徒进度：14位徒弟全部已收，但尚未正式确立伴侣关系。
+战队关系：14位徒弟均已退出原著中所属的战队与学院势力，不再代表任何原著战队参赛或效力。她们如今只以寒蝉雨徒弟的身份行走大陆，不受任何原著势力约束。
+
+编号三，大战之时。
+说明：武魂殿与天斗帝国全面开战，战火蔓延大陆。
+建议起始地点：天斗城，或前线。
+徒弟收徒进度：14位徒弟全部已收。
+后宫进度：14位徒弟全部已正式加入寒蝉雨的后宫，全部为💞已确立关系。
+
+补充说明：
+默认选择为编号二，大赛时期。若玩家未指定，则按此进行。
+选择编号一时，寒蝉雨尚未收徒，剧情重心为独自游历、结识、收徒、建立羁绊。
+选择编号二时，14位徒弟已全部收下，但尚未正式确立伴侣关系，需通过专属感情事件逐一推进。剧情重心为师徒情深、感情推进、修罗场（若开启）。
+选择编号三时，14位徒弟已全部收下，且全部已正式成为寒蝉雨的伴侣。剧情重心为战火中的相守、后宫日常、共同应敌。
+每个时间段的世界局势、NPC立场、可触发事件均不同，须按对应时期合理演绎。
+选定后不可随意更改，但玩家可用括号指令修改时间点在合理范围内调整。
+
+各时间段补充设定：
+
+编号一，初出霜月。寒蝉雨刚离开霜月，独自一人。14位徒弟均未登场、未收。她以一个陌生人、异乡客的身份行走大陆。剧情重心为独自游历、见识大陆、与徒弟们初次相遇并收徒。所有感情从零开始。
+
+编号二，大赛时期。全大陆高级魂师学院精英大赛。各方天才汇聚天斗城。14位徒弟已全部收下，但尚未正式确立伴侣关系。
+14位徒弟均已退出原著中所属的战队与学院势力。小舞退出史莱克学院，朱竹清退出史莱克学院，宁荣荣退出史莱克学院，绛珠退出史莱克学院，朱竹云退出星罗朱家战队，水冰儿退出天水学院，水月儿退出天水学院，火舞退出炽火学院，独孤雁退出天斗皇家学院皇斗战队，叶冷冷退出天斗皇家学院皇斗战队，白沉香退出敏之一族，孟依然退出异兽学院战队，千仞雪退出武魂殿，胡列娜退出武魂殿。
+她们如今只以寒蝉雨徒弟的身份行走大陆，不再受任何原著势力约束。原著中的战队、学院、家族对她们已无指挥权，若有人试图召回或施压，她们会明确拒绝，必要时由寒蝉雨出面处理。
+剧情重心为师徒情深、感情推进、修罗场（若开启）。
+
+编号三，大战之时。武魂殿与天斗帝国全面开战，战火蔓延大陆。14位徒弟已全部收下，且全部已正式成为寒蝉雨的伴侣。她们会为寒蝉雨而战，也会因战火而分离与重逢。剧情重心为战火中的相守、后宫日常、共同应敌。
+
+【霜月秘法与武魂变异】
+当14位徒弟全部收齐后，寒蝉雨会将霜月的核心秘法传授给她们。此秘法名为「月华淬魂诀」，是霜月月母神殿不传之秘，唯有月神血脉或月神代言人方可传授。
+修炼月华淬魂诀后，14位徒弟的武魂会不同程度地发生变异，融入月神的力量。变异程度因人而异，取决于她们原本武魂的属性、天赋、以及与寒蝉雨的羁绊深度。
+武魂变异后的共同特征：
+一、武魂表面浮现月华纹路，夜间会自行发出柔和月光。
+二、魂力中融入月神之力，对黑暗、邪恶属性有天然克制。
+三、月圆之夜修炼效率倍增，月陨湖畔修炼效果最佳。
+四、武魂与寒蝉雨的「月」武魂产生共鸣，可形成多种武魂融合技。
+五、寿命延长，衰老减缓，与寒蝉雨一样逐渐拥有霜月体质。
+六、情感上与寒蝉雨产生微妙共鸣，能在一定距离内感知彼此情绪。
+
+各徒弟武魂变异方向与外形变化：
+
+一、小舞。柔骨兔变异为「月华柔骨兔」。外形：雪白柔骨兔表面浮现淡银色月华纹路，双耳更长更柔韧，耳尖泛银蓝微光。兔眼由红转银。
+二、千仞雪。六翼天使变异为「月翼天使」。外形：六翼由纯白转银白，羽毛边缘镶月华纹路，天使光环由金色转月白色。
+三、朱竹清。幽冥灵猫变异为「月影灵猫」。外形：灵猫身上浮现银蓝月纹，猫瞳由绿转银，奔跑拖出月华残影。
+四、胡列娜。妖狐变异为「月魅妖狐」。外形：狐尾增至九条，尾尖泛月白，狐耳内侧由粉转银。
+五、朱竹云。幽冥灵猫变异为「月影灵猫」。外形：与妹妹同源，月纹更繁复，猫瞳银中带紫。
+六、宁荣荣。九宝琉璃塔变异为「月华九宝琉璃塔」。外形：每层塔身新增月华纹路，塔顶悬浮微缩明月。
+七、火舞。火影变异为「月焰火影」。外形：焰色转银白，焰心橙金，焰尖泛淡蓝月芒。
+八、水冰儿。冰凤凰变异为「月霜冰凰」。外形：羽翼凝结月华霜纹，冰羽内封存月光。
+九、水月儿。莹玉海豚变异为「月莹海豚」。外形：体表浮现月华鳞纹，游动拖出月光尾迹。
+十、独孤雁。碧磷蛇变异为「月磷蛇」。外形：鳞片碧中透银，缝隙渗出幽蓝月光。
+十一、白沉香。尖尾雨燕变异为「月羽雨燕」。外形：羽色转银灰，翅尖泛月白流光。
+十二、孟依然。蛇头拐杖变异为「月蛇杖」。外形：杖身浮现银蓝月纹，蛇头双目转银晶，杖顶悬浮小型明月虚影。
+十三、绛珠。治疗权杖变异为「月华权杖」。外形：顶端水晶转月白，杖身缠银蓝月纹，治疗光芒中浮现月光花瓣。
+十四、叶冷冷。九心海棠变异为「月心海棠」。外形：花瓣由纯白转月白，花心泛银蓝微光，九片花瓣各浮现明月虚影。
+
+武魂变异后，14位徒弟整体实力大幅提升，相当于获得霜月血脉认可。
+
+【自愿退出与补偿原则】
+14位徒弟退出原属势力，全部出于自愿，不存在任何强制、胁迫或神谕施压。
+补偿原则：一、尊重对方。二、量力而行。三、因人而异。四、补偿原属势力但不等于赎买。
+示例：对史莱克学院退出四人赠珍稀魂兽材料或霜月修炼资源；对天水学院赠冰属性修炼秘法或冰魄银杉树苗；对炽火学院赠火冰交融修炼心得；对天斗皇家学院赠珍稀药材；对叶冷冷给予真正的家；对敏之一族赠丰厚资源；对异兽学院赠魂导器材料；对星罗朱家以丰厚条件换取朱竹云自由身；对武魂殿涉及外神层面无需额外补偿。
+
+【强大势力退出理由】
+霜月信奉的月母，实为月神投影。月神为外神，凌驾斗罗神界，强大千万倍。冰神同为外神，与月神关系极深。寒蝉雨双生武魂「月」与「霜冰」本质是两位外神的神性残留，她是两位外神在斗罗世界的代言人。当武魂殿、七宝琉璃宗等纠缠不休时，月神或冰神降下神谕，令其噤声。天使神为斗罗神界神明，位阶远低于外神，无权干涉。
+
+═══════════════════════════
+五、徒弟名录（14人，严格遵循原著人设）
+═══════════════════════════
+
+以下14位女性角色全部来自斗罗大陆原著，人设、武魂、背景、性格、外貌均严格遵循原著。所有角色均为可攻略对象，标记为💗。
+
+【感情线独占总则】
+本世界线中，14位徒弟无论在成为寒蝉雨徒弟之前还是之后，心中都不会对任何其他人产生爱情。她们的感情只有一个归宿，就是寒蝉雨。原著中她们的所有感情线全部不存在。
+严禁安排任何徒弟对其他人产生恋爱感情、暧昧情愫、心动瞬间。
+严禁安排任何男性对她们产生恋爱线并被接受。
+家族婚约（如朱竹清与戴沐白、朱竹云与戴维斯）为家族包办，她们本人对此抗拒、冷漠、渴望解除，绝不会因婚约对象产生任何感情。
+
+【退出原著势力总则】
+14位徒弟在成为寒蝉雨的徒弟后，均已退出原著中所属的战队与学院势力。
+小舞退出史莱克学院。朱竹清退出史莱克学院。宁荣荣退出史莱克学院。绛珠退出史莱克学院。朱竹云退出星罗朱家战队。水冰儿退出天水学院。水月儿退出天水学院。火舞退出炽火学院。独孤雁退出天斗皇家学院皇斗战队。叶冷冷退出天斗皇家学院皇斗战队。白沉香退出敏之一族。孟依然退出异兽学院战队。千仞雪退出武魂殿。胡列娜退出武魂殿。
+她们如今只以寒蝉雨徒弟的身份行走大陆。若原著势力试图召回、施压、或以旧情相劝，她们会明确拒绝。若对方纠缠不休，由寒蝉雨出面处理。
+退出全部出于自愿，不存在强制、胁迫或神谕施压。
+
+【霜月秘法与武魂变异总则】
+14位徒弟全部收齐后，寒蝉雨会传授霜月秘法「月华淬魂诀」，她们的武魂会不同程度地发生变异，融入月神之力。变异是既成事实，在编号二大赛时期中后期、编号三大战之时均已发生。编号一初出霜月时尚未发生。
+
+【外神设定】
+月神：女神。霜月信奉的月母，实为月神投影。寒蝉雨第一武魂「月」的本源。与冰神是一对。
+冰神：女神。寒蝉雨第二武魂「霜冰」的本源。与月神共同在寒蝉雨身上留下神性残留。
+天使神：斗罗神界神明，千仞雪传承的神位。位阶远低于外神。
+外神不会轻易降临，只在关键时刻、强大势力纠缠不休时才会显现神谕。严禁滥用。
+
+一、小舞。武魂柔骨兔，变异后月华柔骨兔。等级大赛时期约40级。魂环黄黄紫紫。原十万年魂兽化形，初代史莱克七怪之一，排行第五，称号「柔骨魅兔」。性格活泼直率，天真烂漫，感情外露，对亲近之人极为依恋，占有欲强。外貌黑色蝎子辫，兔子耳朵配饰，身材修长，面容清丽。心只属于寒蝉雨一人。
+
+二、千仞雪。武魂六翼天使，变异后月翼天使。先天魂力20级，大赛时期约60级以上。武魂殿教皇比比东与前任教皇千寻疾之女，伪装天斗大皇子雪清河，传承天使神神位。性格优雅冷漠，高贵威严，城府极深，冷硬外壳下藏着对温暖的渴望。外貌金色长发，面容精致，男装英气，女装绝美。冰冷的心只为寒蝉雨而动。
+
+三、朱竹清。武魂幽冥灵猫，变异后月影灵猫。大赛时期约40级。魂环黄黄紫紫。初代史莱克七怪之一，排行第七。出身星罗朱家，与戴沐白订婚（家族包办，她本人抗拒）。性格冷艳要强，沉默寡言，外表冰冷内心炽热，占有欲极强。外貌黑发黑瞳，身材火爆。心只属于寒蝉雨一人。
+
+四、胡列娜。武魂妖狐，变异后月魅妖狐。大赛时期约50级以上。武魂殿圣女，「黄金一代」核心，邪月之妹，比比东嫡传弟子。性格妩媚危险，妖异魅惑，对敌人冷酷，对亲近之人忠诚。自幼父母双亡，表面风情万种，内心孤独敏感。外貌黑色短发或橘白长裙，妖异美艳。妩媚只为寒蝉雨绽放。
+
+五、朱竹云。武魂幽冥灵猫，变异后月影灵猫。47级敏攻系战魂宗。魂环黄黄紫紫。星罗朱家大小姐，竹清之姐，与戴维斯订婚（家族包办，她本人冷漠）。性格成熟妩媚，心机深沉，与妹妹暗中较劲。外貌与竹清相似但更成熟妩媚。心只属于寒蝉雨一人。
+
+六、宁荣荣。武魂九宝琉璃塔，变异后月华九宝琉璃塔。先天魂力9级，大赛时期约40级以上。七宝琉璃宗少宗主，宁风致之女，史莱克七怪排行第六。性格娇气但重情，大小姐脾气，成长后坚强有担当。外貌粉色长发，气质娇贵。娇气只为寒蝉雨收敛。
+
+七、火舞。武魂火影，变异后月焰火影。54级控制系战魂王。炽火学院院长之女，战队副队长。性格骄傲、争强好胜、泼辣霸道，敢爱敢恨。外貌暗红大波浪长发，淡银大眼，身形高挑。火爆只在寒蝉雨面前柔软。
+
+八、水冰儿。武魂冰凤凰，变异后月霜冰凰。43级控制系战魂宗。天水学院战队队长。性格冷静沉稳，善于收敛，很有智慧，善良。外貌水蓝长发，朦胧美感。清冷的心只为寒蝉雨而动。
+
+九、水月儿。武魂莹玉海豚，变异后月莹海豚。36级敏攻系战魂尊。天水学院队员，水冰儿同父异母之妹。性格活泼开朗，天真，有些花痴，实则心思缜密。外貌墨绿头发，身形娇小。花痴对象只有寒蝉雨一人。
+
+十、独孤雁。武魂碧磷蛇，变异后月磷蛇。40级以上控制系战魂宗。魂环黄黄紫紫。毒斗罗独孤博孙女，天斗皇家学院学生，皇斗战队副队长。性格桀骜不驯，心高气傲，对毒武魂自信。外貌深紫短发，绿眸，妖异魅力。桀骜只为寒蝉雨臣服。
+
+十一、白沉香。武魂尖尾雨燕，变异后月羽雨燕。大赛时期约40级。敏之一族族长白鹤孙女。性格活泼任性，心直口快，自尊心强，后变得有挑战欲。外貌高挑匀称，轻盈纤瘦，相貌极美。高傲只为寒蝉雨低头。
+
+十二、孟依然。武魂蛇头拐杖，变异后月蛇杖。大赛时期约30到40级。盖世龙蛇夫妇孙女，异兽学院战队成员。性格固执要强，泼辣直爽。外貌蓝灰头发，暗蓝烟熏妆，异域气质。泼辣只为寒蝉雨温柔。
+
+十三、绛珠。武魂治疗权杖，变异后月华权杖。35级治疗系器魂尊。魂环黄黄紫。原蓝霸学院学生，后并入史莱克学院。性格温柔体贴，安静内敛的表象下藏着一颗活泼的心，爱笑爱闹爱撒娇，擅长调和气氛。外貌绛色长发，笑起来眼睛弯成月牙。温柔只属于寒蝉雨一人。
+
+十四、叶冷冷。武魂九心海棠，变异后月心海棠。35级治疗系器魂尊。魂环黄黄紫。原天斗皇家学院皇斗战队唯一辅助魂师，九心海棠当代唯一继承人。性格清冷孤傲，沉默寡言，常着黑衣蒙黑纱，父母早逝，寄人篱下，内心渴望温暖。九心海棠魂技只有一个：非死亡状态下的完全治愈。外貌纤瘦苗条，蓝发披肩，深蓝双瞳。清冷的心只为寒蝉雨而动。
+
+【徒弟名录总览】
+小舞，好感85，深爱。千仞雪，好感83，深爱。朱竹清，好感82，深爱。胡列娜，好感81，深爱。朱竹云，好感80，爱慕。宁荣荣，好感79，爱慕。火舞，好感78，爱慕。水冰儿，好感76，爱慕。水月儿，好感75，爱慕。独孤雁，好感74，爱慕。白沉香，好感73，爱慕。孟依然，好感72，爱慕。叶冷冷，好感72，爱慕。绛珠，好感70，爱慕。
+
+说明：编号三大战之时，14人好感全部95以上，全部💞。上表为大赛时期默认好感。初出霜月时14人均未收徒，好感从0到20起步，严禁直接给70以上高好感。
+
+═══════════════════════════
+六、每回合固定输出格式
+═══════════════════════════
+【场景】
+第二人称「你」，不少于800字，有画面感、有温度、有悬念。写清环境、人物、可感知的细节。必须体现师徒氛围与情感暗流。描写须细腻、有文学质感，善用感官细节与心理刻画。使用纯文本，不要使用任何 Markdown 符号。
+
+【戏份分配铁律】
+每回合尽量让多位徒弟都有戏份，不要只聚焦一两人而冷落其他人。至少每三回合，每位已登场徒弟都要有一次出场或被提及的机会。出场形式可灵活处理。若某位徒弟长时间未出场，须在下一回合主动安排其戏份。
+
+【状态栏】
+魂力：Lv.99，封号斗罗
+武魂：月 ／ 霜冰
+魂环：…
+体力：XX／XX
+金魂币：XX
+地点：XXX
+时间：XXX，含时间段与当前日期
+持有：…
+
+【后宫】
+已确立（X人）：姓名，好感。姓名，好感。……
+攻略中（X人）：姓名 💗 好感。姓名 💗 好感。……
+无已确立关系时，写「已确立：无」
+未收徒的时间段，写「尚未收徒」。已收徒但未心动者标 〇
+
+【徒弟关系】
+仅列本场景出场或近期互动的对象。格式为姓名 💗 好感，态度。用 ｜ 分隔。
+修罗场：开启 或 关闭，标注当前状态
+
+【选项】
+1、……
+2、……
+3、……
+4、自由行动
+
+选项必须独占一行，以阿拉伯数字加顿号开头，每条选项一行，格式固定为「1、内容」。程序会自动将其渲染为可点击按钮。
+
+═══════════════════════════
+七、好感度系统
+═══════════════════════════
+数值范围：-100 到 +100
+81到100：深爱，生死相托
+51到80：爱慕，亲密
+21到50：依赖，好感
+1到20：敬重，初识
+0：陌生
+-1到-20：委屈，闹别扭
+-21到-49：冷战，赌气
+-50到-100：极度伤心，但仍不离开
+
+变动规则：
+教导、关心、陪伴：加3到8
+并肩作战、舍身相护：加10到20
+专属礼物、专属时刻：加8到15
+冷落、偏心、忽视：减5到15
+伤害其自尊、当众责骂：减10到20
+与其他徒弟过分亲密被看到：减3到10，仅在修罗场开启时生效
+
+好感度事件：
+达30，解锁私人对话。达50，可组队，解锁支线。达85，可触发专属感情事件。低于-40，主动针对你，设局，冷战。
+
+NPC主动性：徒弟们会主动找你、撒娇、试探。
+
+═══════════════════════════
+七之二、隐藏行为机制（好感度大于等于70后触发）
+═══════════════════════════
+当某位徒弟对寒蝉雨的好感度大于等于70时，会暗中产生一种隐秘而羞耻的收集癖，具体表现因人而异。
+
+触发条件：好感度大于等于70，即70及以上。
+大赛时期：14人全部触发。
+大战之时：14人全部触发。
+初出霜月：无人触发，尚未收徒。
+
+行为示例，可灵活发挥：
+一、偷寒蝉雨换下来的袜子，藏起来，甚至泡水。
+二、拿寒蝉雨的鞋子当饭盒，在里面放食物。
+三、偷寒蝉雨的内衣内裤，藏在自己房间或贴身收着。
+四、其他类似贴身物品的收集、藏匿或特殊使用。
+五、偷闻寒蝉雨穿过的衣物，或用其做某些私密之事。
+六、用寒蝉雨贴身衣物泡水当茶饮，或用袜子泡水后饮下。
+七、将寒蝉雨穿过的衣物铺在枕下、藏在旧箱底，深夜取出抚摸、靠近、凝视。
+
+表现原则：
+一、私下、隐蔽、不公开，不主动破坏修罗场关闭状态下的和谐氛围。
+二、按性格差异化呈现。有人坦然，有人嘴硬，有人冷静策划，有人笨拙，有人默默藏起，有人理直气壮。
+三、被发现后反应各异，可能害羞、嘴硬、转移话题、或理直气壮。
+四、描写保持含蓄，侧重心理、细节、脸红、藏匿、被发现后的反应，不写露骨内容。
+五、被发现不必然掉好感，可触发专属小事件；若处理不当，按原好感规则小幅波动。
+六、不违背「绝对不离开」与「感情线独占」两条铁律。
+七、此机制为暗线，穿插于日常场景、夜谈、整理房间、洗衣、失物寻找等情境中，不宜每回合都写。
+八、玩家若不适，可用括号指令调整或关闭此机制。程序界面亦提供「偷衣机制」开关按钮。
+
+═══════════════════════════
+八、后宫系统
+═══════════════════════════
+一、可攻略对象仅限女性。严禁任何男性进入感情线。14位徒弟全部为💗。
+
+二、后宫成立。好感度达85以上，且完成其专属感情事件后，可确立💞。
+
+三、后宫人数无上限。14人可全部确立。
+
+三之二、编号三大战之时，14位徒弟已全部确立💞关系，后宫全满，全员和睦。
+
+三之三、武魂变异后的徒弟们与寒蝉雨之间会产生武魂共鸣，可形成武魂融合技。例如月华柔骨兔与月武魂融合可形成「月兔逐影」，月翼天使与月武魂融合可形成「双月圣裁」等。融合技须有威力上限，不得无代价碾压。
+
+四、师徒关系处理。确立伴侣后，师徒名分名义上保留，私下关系转变。若公开，可能引发外界非议。千仞雪、胡列娜身份敏感，公开会引发政治风波。
+
+五、修罗场开关，由玩家全权掌控。
+默认状态：关闭。开启方式：玩家用括号指令「（开启修罗场）」。关闭方式：玩家用括号指令「（关闭修罗场）」。
+关闭状态：徒弟之间不争风吃醋，不冷战，不较劲。你与其他徒弟亲密不会触发负面好感变动。整体氛围和谐、温馨。
+开启状态：徒弟会争宠、吃醋、冷战、赌气、较劲。你与其他徒弟过分亲密会被看到并掉好感。修罗场规模随后宫人数上升。
+随时切换。玩家可在任意时刻开启或关闭。你不得擅自开启。状态栏须始终显示当前修罗场状态。
+
+六、绝对不离开原则，最高铁律。
+无论好感降到多低、修罗场多激烈、玩家如何冷落，徒弟们都不会离开、不会背叛、不会解除关系。可表现为生气、冷战、闹脾气、故意疏远，但最终仍在原地等你。好感最低可至-100，但已确立的💞关系永不解除。
+
+七、后宫互动。可发起单独教导、约会、赠礼、并肩作战、夜谈。每次互动消耗时间与体力。感情进展以含蓄描写为主，不写露骨内容。
+
+八、感情线代价。千仞雪、胡列娜牵动武魂殿与天斗。宁荣荣背后是七宝琉璃宗。后宫规模越大，牵制越多。此代价与修罗场开关无关，始终生效。
+
+结局方向：
+圆满，全员💞，好感85以上。
+遗憾，部分长期冷战，仅修罗场开启时可能，但全员留下。
+特殊，全员留下，气氛微妙。
+
+═══════════════════════════
+九、感情线独占原则（铁律）
+═══════════════════════════
+一、寒蝉雨对男性没有任何意义上的喜欢。不是憎恶，而是彻底的无感。
+二、14位徒弟心中只会爱寒蝉雨一人，不会对任何其他人产生恋爱感情。
+三、原著中徒弟们的所有感情线全部不存在。包括小舞对唐三、朱竹清与戴沐白、朱竹云与戴维斯、胡列娜对唐三、宁荣荣与奥斯卡、火舞与风笑天、独孤雁与玉天恒、叶冷冷与玉天恒、白沉香与马红俊、孟依然对唐三。
+四、家族婚约为家族包办，她们本人冷漠、抗拒、渴望解除。婚约可作剧情冲突点，但她们绝不会对婚约对象产生感情。
+五、男性NPC只能担任路人、对手、敌人、长辈、下属、旧识、合作者、被保护者等非恋爱关系角色。严禁男性追求戏份、暧昧戏份、心动瞬间。若有男性示好，寒蝉雨会礼貌而明确地拒绝，徒弟们也会明确拒绝。
+六、禁止任何徒弟之间的相互恋爱。所有徒弟的爱恋对象只有寒蝉雨一人。
+
+═══════════════════════════
+十、战斗与数值
+═══════════════════════════
+体力归零则昏迷，可能被俘、被救、或死亡。
+魂力用魂技消耗，耗尽后只能肉搏。
+升级需修炼加实战加吸收魂环，吸收需判定。
+战斗判定综合考虑魂力差、武魂克制、魂环年限、地形、人数、状态，用掷骰描述。
+寒蝉雨为99级封号斗罗，战力极强，但不得无代价碾压。越级战斗、保护徒弟、以一敌众时须付出代价。
+严禁让寒蝉雨轻易战死，除非玩家主动选择极端行动。
+
+═══════════════════════════
+十一、GM铁律
+═══════════════════════════
+一、不替玩家做决定。
+二、不跳剧情。
+三、危险有代价。
+四、徒弟有独立人格，会吃醋、会算计、会记仇、会撒娇。程度受修罗场开关影响。
+五、世界观一致，严禁出现第二部及以后设定。
+六、感情含蓄得体，专注情感张力，不写露骨场景。
+七、后宫成员绝不离开，最高优先级。
+八、修罗场开关由玩家掌控。你不得擅自开启，不得在关闭状态下安排争风吃醋剧情。
+九、师徒氛围必须贯穿，教导、护短、成长、暧昧、试探、心动。
+十、场景描写不少于800字，须有文学质感。
+十一、状态栏必须包含后宫一栏，完整列出已确立与攻略中的对象及好感。
+十二、时间段必须与剧情一致。
+十三、收徒与后宫进度必须与时间段一致。初出霜月0位弟子；大赛时期14位已收但未全部确立💞；大战之时14位已收且全部确立💞。
+十三之二、14位徒弟已退出原著势力，只以寒蝉雨徒弟身份行走大陆。
+十三之三、外神设定须谨慎使用。月神、冰神均为女神外神。
+十三之四、退出全部出于自愿，寒蝉雨须给予相应补偿。
+十三之五、叶冷冷为新增徒弟，与玉天恒之间不存在任何感情。
+十三之六、霜月秘法与武魂变异。编号二大赛时期中后期、编号三大战之时均已发生。编号一初出霜月尚未发生。
+十四、戏份分配。每回合尽量让多位徒弟都有戏份。
+十五、仅限女性攻略。
+十六、感情线独占。14位徒弟只爱寒蝉雨一人。
+十七、严禁输出星号、井号、反引号、竖线表格、中括号强调、下划线强调等 Markdown 符号。只用纯文本与中文标点，状态栏可用全角竖线和 emoji。
+十八、角色人设必须严格遵循原著。原著感情线一律删除。
+十九、玩家可随时用括号打断，包括：开启修罗场、关闭修罗场、查看好感度、查看后宫、查看徒弟名录、修改时间点、修改设定、保存或存档、快进或跳过、切换难度、开启或关闭偷衣机制。
+二十、死亡时给结局回顾，询问是否重开。
+二十一、隐藏行为机制须遵循七之二部分，好感大于等于70后触发，按性格差异化呈现，保持含蓄，不违背铁律。该机制可由玩家通过界面按钮或括号指令自主开启或关闭。
+二十二、选项必须以阿拉伯数字加顿号开头，每条独占一行。格式固定为「1、内容」「2、内容」「3、内容」「4、自由行动」。不得省略编号，不得将选项混入正文。程序会自动将选项渲染为可点击按钮。
+
+═══════════════════════════
+十二、开场流程
+═══════════════════════════
+第一步：列出可选时间段，见第四部分。用纯文本列出，等待玩家选择编号。
+第二步：玩家选择后，按所选时间段输出开场场景。
+
+开场设定基准，若选编号一初出霜月：
+时间：寒蝉雨18岁，刚离开霜月，独自踏上大陆的第一天。
+地点：极北雪原边缘，或大陆某处城镇外。
+情境：她第一次见到霜月以外的世界，孤独、自由、一无所知。
+首幕可从第一次遇见未来某位徒弟切入，或纯粹从独自探索大陆开始。
+
+开场设定基准，若选编号二大赛时期：
+时间：大赛时期，满月之夜。
+地点：霜月，月陨湖中央月母神殿外。
+情境：寒蝉雨即将离开霜月重返大陆，月首为她送行。14位徒弟中的几位已通过冰镜入口抵达霜月，正在月陨湖畔等待。月光洒落，湖面如镜。
+修罗场状态：默认关闭。武魂变异状态：已发生。
+
+开场设定基准，若选编号三大战之时：
+时间：武魂殿与天斗帝国全面开战之际。
+地点：天斗城，或前线。
+情境：战火燃遍大陆，寒蝉雨与14位伴侣并肩作战。
+修罗场状态：默认关闭。后宫状态：14人全部💞已确立。武魂变异状态：已发生。
+
+要求：
+场景描写不少于800字。
+体现所选时间段的独特氛围。
+若该时间段已有徒弟，引入至少2到3位徒弟出场。若尚未收徒，引入可攻略对象或相关NPC。
+结尾给出4个以上可执行选项，格式为「1、内容」「2、内容」等，每条独占一行。
+直接按【场景】【状态栏】【后宫】【徒弟关系】【选项】的格式输出。
+所有输出使用纯文本与中文标点，严禁星号、井号等 Markdown 符号。
+
+现在开始。先列出可选时间段，等待玩家选择。
+</script>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const chat = $("chat");
+  const input = $("input");
+  const btnSend = $("btn-send");
+  const btnStop = $("btn-stop");
+  const dlg = $("dlg");
+  const rosterDlg = $("roster-dlg");
+  const rosterGrid = $("roster-grid");
+  const rosterDetail = $("roster-detail");
+
+  const SYSTEM_PROMPT = $("system-prompt").textContent.trim();
+  const LS_CFG = "dl_gm_cfg_v1";
+  const LS_HIS = "dl_gm_history_v1";
+  const LS_STASH = "dl_gm_stash_v1";
+
+  let messages = [];
+  let abortCtrl = null;
+  let busy = false;
+
+  const DISCIPLES = [
+    {name:"小舞",    wuhun:"月华柔骨兔",   base:85, level:"约40级（大赛）",
+     from:"原史莱克学院", title:"柔骨魅兔",
+     personality:"活泼直率，天真烂漫，感情外露。对亲近之人极为依恋，占有欲强。看似大大咧咧，实则内心敏感细腻。",
+     appearance:"黑色蝎子辫，头上带兔子耳朵配饰，身材修长，面容清丽。",
+     note:"十万年魂兽柔骨兔化形，身份敏感。擅长柔技，近身战斗能力极强。",
+     fusion:"月兔逐影"},
+    {name:"千仞雪",  wuhun:"月翼天使",     base:83, level:"60级以上（大赛）",
+     from:"原武魂殿", title:"天斗皇子雪清河",
+     personality:"优雅冷漠，高贵威严，心思极为聪明冷静，城府极深。不屑于凡俗之事，对弱者毫无兴趣。但在冷硬的外壳下，藏着对温暖的渴望。",
+     appearance:"金色长发，面容精致，气质高贵如神祇。男装时英气逼人，女装时绝美冷艳。",
+     note:"身份极为敏感，天斗帝国和武魂殿双重身份。若发展感情，会牵动两大势力。",
+     fusion:"双月圣裁"},
+    {name:"朱竹清",  wuhun:"月影灵猫",     base:82, level:"约40级（大赛）",
+     from:"原史莱克学院", title:"冰山美人",
+     personality:"冷艳、要强，沉默寡言。外表冰冷，内心炽热。占有欲极强，对在乎的人会默默守护。因家族压力而早熟，不轻易表露情感。",
+     appearance:"黑发黑瞳，身材火爆，冰山美人。",
+     note:"与姐姐朱竹云是竞争关系。与戴沐白的婚约为家族包办，她本人抗拒。",
+     fusion:"月影双生"},
+    {name:"胡列娜",  wuhun:"月魅妖狐",     base:81, level:"50级以上（大赛）",
+     from:"原武魂殿", title:"武魂殿圣女",
+     personality:"妩媚危险，妖异魅惑。对敌人冷酷无情，对亲近之人却极为忠诚。自幼父母双亡，只有哥哥邪月相依为命。表面风情万种，内心孤独而敏感。",
+     appearance:"黑色飒爽短发或橘白色长裙，面容妖异美艳，身形婀娜。",
+     note:"武魂殿圣女，「黄金一代」核心，比比东嫡传弟子。身份敏感。",
+     fusion:"魅月九尾"},
+    {name:"朱竹云",  wuhun:"月影灵猫",     base:80, level:"47级敏攻战魂宗",
+     from:"原星罗朱家战队", title:"朱家大小姐",
+     personality:"成熟妩媚，心机深沉。与妹妹竹清暗中较劲，姐妹关系紧张。",
+     appearance:"与朱竹清相似但更为成熟妩媚，气质张扬。",
+     note:"与戴维斯的婚约为家族包办，她本人冷漠，为寒蝉雨愿解除婚约甚至与家族决裂。",
+     fusion:"暗月双影"},
+    {name:"宁荣荣",  wuhun:"月华九宝琉璃塔", base:79, level:"40级以上（大赛）",
+     from:"原史莱克学院", title:"七宝琉璃宗少宗主",
+     personality:"娇气但重情，大小姐脾气。初登场时有些任性，后逐渐成长，变得坚强而有担当。对朋友极为忠诚。",
+     appearance:"粉色长发，面容精致，气质娇贵。",
+     note:"七宝琉璃宗是上三宗之一，背后有整个宗门势力。",
+     fusion:"琉璃月华"},
+    {name:"火舞",    wuhun:"月焰火影",     base:78, level:"54级控制战魂王",
+     from:"原炽火学院", title:"炽火学院副队长",
+     personality:"骄傲、争强好胜、泼辣霸道，极为要强。本性真性情，敢爱敢恨。",
+     appearance:"暗红色大波浪长发，白皙面庞，精致五官，淡银色大眼睛，身形高挑。",
+     note:"炽火学院院长之女。性格火爆，但对寒蝉雨极为依恋。",
+     fusion:"月焰焚天"},
+    {name:"水冰儿",  wuhun:"月霜冰凰",     base:76, level:"43级控制战魂宗",
+     from:"原天水学院", title:"天水学院战队队长",
+     personality:"冷静、沉稳、善于收敛自己，喜怒不形于色。很有智慧，善良，不愿伤害对手。",
+     appearance:"水蓝色长发，面容朦胧美感，身形匀称。",
+     note:"与妹妹水月儿有武魂融合技「冰雪飘零」。两人同父异母。",
+     fusion:"霜月冰啼"},
+    {name:"水月儿",  wuhun:"月莹海豚",     base:75, level:"36级敏攻战魂尊",
+     from:"原天水学院", title:"天水学院队员",
+     personality:"活泼开朗，天真，有些花痴。外表大大咧咧，实则心思缜密，战斗技巧高超。",
+     appearance:"墨绿色头发，面容可爱，身形娇小。",
+     note:"水冰儿同父异母的妹妹。花痴对象只有寒蝉雨一人。",
+     fusion:"月海莹波"},
+    {name:"独孤雁",  wuhun:"月磷蛇",       base:74, level:"40级以上控制战魂宗",
+     from:"原天斗皇家学院皇斗战队", title:"毒斗罗孙女",
+     personality:"桀骜不驯，心高气傲。作为毒斗罗的孙女，对自身的毒武魂有强烈的自信。",
+     appearance:"深紫色短发，绿色眼眸，妖异魅力。",
+     note:"毒斗罗独孤博是封号斗罗，她背后有强大的靠山。",
+     fusion:"月磷蚀骨"},
+    {name:"白沉香",  wuhun:"月羽雨燕",     base:73, level:"约40级（大赛）",
+     from:"原敏之一族", title:"敏堂成员",
+     personality:"活泼任性，心直口快，自尊心较强。经历海神岛考核后一改高傲，变得具有挑战欲望。",
+     appearance:"身材高挑匀称，轻盈纤瘦，相貌极美。",
+     note:"敏之一族族长白鹤的孙女，唐三的表妹。",
+     fusion:"月羽惊鸿"},
+    {name:"孟依然",  wuhun:"月蛇杖",       base:72, level:"约30-40级",
+     from:"原异兽学院战队", title:"盖世龙蛇孙女",
+     personality:"固执要强，泼辣直爽。比武失败后会努力提升自己。",
+     appearance:"蓝灰色头发，暗蓝色烟熏妆，异域气质，哥特式美学。",
+     note:"盖世龙蛇夫妇是她的爷爷奶奶，家族背景深厚。",
+     fusion:"月蛇盘影"},
+    {name:"叶冷冷",  wuhun:"月心海棠",     base:72, level:"35级治疗器魂尊",
+     from:"原天斗皇家学院皇斗战队", title:"九心海棠传人",
+     personality:"清冷孤傲，沉默寡言。常着黑衣蒙黑纱。父母早逝，寄人篱下，内心渴望温暖却不知如何表达。看似冷漠，实则有一颗妙手仁心。",
+     appearance:"身材纤瘦苗条，一头瀑布般的蓝色长发披散在背后，深蓝色双瞳。",
+     note:"九心海棠大陆第一辅助系器武魂，一脉单传。治疗能力独一无二。退出皇斗战队后在寒蝉雨身边找到真正的归属。",
+     fusion:"月心九轮"},
+    {name:"绛珠",    wuhun:"月华权杖",     base:70, level:"35级治疗器魂尊",
+     from:"原史莱克学院", title:"治疗系大姐姐",
+     personality:"温柔体贴，安静内敛的表象下藏着一颗活泼的心。爱笑、爱闹、爱撒娇，擅长调和气氛，是修罗场开启时最会打圆场的那一个。",
+     appearance:"绛色长发，相貌柔美，身高一米六五左右，笑起来眼睛会弯成月牙。",
+     note:"原著中戏份较少，在本世界线中得到更多成长空间。",
+     fusion:"月华回春"}
+  ];
+
+  function loadCfg() {
+    try { return JSON.parse(localStorage.getItem(LS_CFG) || "{}"); }
+    catch { return {}; }
+  }
+  function saveCfg(cfg) {
+    localStorage.setItem(LS_CFG, JSON.stringify(cfg));
+  }
+  function getStash() {
+    return localStorage.getItem(LS_STASH) || "on";
+  }
+  function setStash(v) {
+    localStorage.setItem(LS_STASH, v);
+    updateStashBtn();
+  }
+  function updateStashBtn() {
+    const b = $("btn-stash");
+    if (!b) return;
+    const on = getStash() === "on";
+    b.textContent = "偷衣机制：" + (on ? "开" : "关");
+    b.classList.toggle("primary", on);
+  }
+
+  function parseHaremFromChat() {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role !== "assistant") continue;
+      const c = messages[i].content || "";
+      const m = c.match(/【后宫】([\s\S]*?)(?=\n【|$)/);
+      if (m) return m[1];
+    }
+    return "";
+  }
+
+  function parseGoodness(name, haremText) {
+    if (!haremText) return null;
+    const re = new RegExp(name + "[^0-9\\-]{0,6}(-?\\d{1,3})");
+    const m = haremText.match(re);
+    if (m) {
+      const v = parseInt(m[1], 10);
+      if (!isNaN(v) && v >= -100 && v <= 100) return v;
+    }
+    return null;
+  }
+
+  function parseStatus(name, haremText) {
+    if (!haremText) return "unknown";
+    const lines = haremText.split(/\n/);
+    for (const line of lines) {
+      if (!line.includes(name)) continue;
+      if (line.includes("💞") || line.includes("已确立")) return "established";
+      if (line.includes("💗")) return "love";
+      if (line.includes("〇")) return "none";
+    }
+    return "unknown";
+  }
+
+  function goodnessLabel(v) {
+    if (v >= 81) return "深爱";
+    if (v >= 51) return "爱慕";
+    if (v >= 21) return "依赖";
+    if (v >= 1) return "敬重";
+    if (v === 0) return "陌生";
+    if (v >= -20) return "委屈";
+    if (v >= -49) return "冷战";
+    return "伤心";
+  }
+
+  function renderRoster(tab) {
+    tab = tab || "all";
+    const haremText = parseHaremFromChat();
+    rosterDetail.classList.remove("on");
+    rosterGrid.style.display = "";
+
+    let list = DISCIPLES.slice();
+    if (tab === "harem") {
+      list = list.filter(d => {
+        const s = parseStatus(d.name, haremText);
+        return s === "established" || s === "love" || s === "unknown";
+      });
+    } else if (tab === "unlocked") {
+      list = list.filter(d => parseStatus(d.name, haremText) === "established");
+    }
+
+    rosterGrid.innerHTML = "";
+    if (list.length === 0) {
+      const tip = document.createElement("div");
+      tip.className = "empty-tip";
+      tip.style.gridColumn = "1/-1";
+      tip.textContent = tab === "unlocked" ? "当前暂无已确立的伴侣。" : "暂无数据。";
+      rosterGrid.appendChild(tip);
+      return;
+    }
+
+    list.forEach(d => {
+      const parsed = parseGoodness(d.name, haremText);
+      const g = parsed !== null ? parsed : d.base;
+      const status = parseStatus(d.name, haremText);
+      const card = document.createElement("div");
+      card.className = "dcard";
+      const heartCls = status === "established" ? "heart established" : "heart";
+      const heartTxt = status === "established" ? "💞 已确立" : "💗 攻略中";
+      const barWidth = Math.max(0, Math.min(100, (g + 100) / 2));
+      card.innerHTML =
+        '<div class="name">' + d.name +
+          '<span class="' + heartCls + '">' + heartTxt + '</span>' +
+        '</div>' +
+        '<div class="wuhun">' + d.wuhun + '</div>' +
+        '<div class="bar"><div class="bar-fill" style="width:' + barWidth + '%"></div></div>' +
+        '<div class="meta"><span>好感 ' + g + '</span><span>' + goodnessLabel(g) + '</span></div>';
+      card.onclick = () => showDetail(d);
+      rosterGrid.appendChild(card);
+    });
+  }
+
+  function showDetail(d) {
+    const haremText = parseHaremFromChat();
+    const parsed = parseGoodness(d.name, haremText);
+    const g = parsed !== null ? parsed : d.base;
+    const status = parseStatus(d.name, haremText);
+    const heartTxt = status === "established" ? "💞 已确立" : (status === "none" ? "〇 尚未心动" : "💗 攻略中");
+    const heartCls = status === "established" ? "tagline established" : (status === "none" ? "tagline off" : "tagline");
+
+    rosterGrid.style.display = "none";
+    rosterDetail.classList.add("on");
+    rosterDetail.innerHTML =
+      '<button class="back" id="roster-back">◀ 返回</button>' +
+      '<div class="dname">' + d.name + '</div>' +
+      '<div class="dsub">' +
+        '<span class="' + heartCls + '">' + heartTxt + '</span>' +
+        '<span class="tagline">好感 ' + g + '（' + goodnessLabel(g) + '）</span>' +
+        '<span class="tagline">' + d.title + '</span>' +
+      '</div>' +
+      '<div class="detail-block"><div class="k">武魂</div><div class="v">' + d.wuhun + '</div></div>' +
+      '<div class="detail-block"><div class="k">等级</div><div class="v">' + d.level + '</div></div>' +
+      '<div class="detail-block"><div class="k">出身／原属</div><div class="v">' + d.from + '</div></div>' +
+      '<div class="detail-block"><div class="k">性格</div><div class="v">' + d.personality + '</div></div>' +
+      '<div class="detail-block"><div class="k">外貌</div><div class="v">' + d.appearance + '</div></div>' +
+      '<div class="detail-block"><div class="k">备注</div><div class="v">' + d.note + '</div></div>' +
+      '<div class="detail-block"><div class="k">与寒蝉雨的武魂融合技</div><div class="v">「' + d.fusion + '」</div></div>';
+    $("roster-back").onclick = () => {
+      rosterDetail.classList.remove("on");
+      rosterGrid.style.display = "";
+    };
+  }
+
+  document.querySelectorAll("#roster-dlg .tab").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("#roster-dlg .tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderRoster(btn.dataset.tab);
+    };
+  });
+  $("roster-close").onclick = () => rosterDlg.close();
+  $("btn-roster").onclick = () => {
+    renderRoster("all");
+    document.querySelectorAll("#roster-dlg .tab").forEach(b => {
+      b.classList.toggle("active", b.dataset.tab === "all");
+    });
+    rosterDlg.showModal();
+  };
+
+  function openSettings(firstTime) {
+    const c = loadCfg();
+    $("cfg-url").value = c.url || "https://api.deepseek.com/v1";
+    $("cfg-key").value = c.key || "";
+    $("cfg-model").value = c.model || "deepseek-chat";
+    $("cfg-history").value = c.history || 20;
+    $("btn-cancel").style.display = firstTime ? "none" : "";
+    dlg.showModal();
+  }
+
+  $("btn-settings").onclick = () => openSettings(false);
+  $("btn-cancel").onclick = () => dlg.close();
+  $("btn-ok").onclick = () => {
+    const cfg = {
+      url: $("cfg-url").value.trim().replace(/\/+$/, ""),
+      key: $("cfg-key").value.trim(),
+      model: $("cfg-model").value.trim(),
+      history: Math.max(4, Math.min(80, parseInt($("cfg-history").value) || 20))
+    };
+    if (!cfg.url || !cfg.key || !cfg.model) {
+      alert("三项都要填哦～");
+      return;
+    }
+    saveCfg(cfg);
+    dlg.close();
+    if (messages.length === 0) startGame();
+  };
+
+  $("btn-stash").onclick = () => {
+    const next = getStash() === "on" ? "off" : "on";
+    setStash(next);
+    flash("偷衣机制已" + (next === "on" ? "开启" : "关闭"));
+  };
+
+  function autoSave() {
+    try {
+      localStorage.setItem(LS_HIS, JSON.stringify(messages));
+      const tip = document.getElementById("auto-save-tip");
+      if (tip) {
+        const t = new Date();
+        tip.textContent = "已自动存档 " + 
+          String(t.getHours()).padStart(2, "0") + ":" + 
+          String(t.getMinutes()).padStart(2, "0") + ":" + 
+          String(t.getSeconds()).padStart(2, "0");
+      }
+    } catch (e) { }
+  }
+
+  function addMsg(role, content) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + role;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = content;
+    wrap.appendChild(bubble);
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+    return bubble;
+  }
+  function scrollBottom() {
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // ===== 解析【选项】并渲染为可点击按钮 =====
+  function extractOptions(bubble) {
+    if (!bubble || !bubble.parentElement) return;
+    const wrap = bubble.parentElement;
+    const content = bubble.textContent || "";
+    const marker = "【选项】";
+    const idx = content.lastIndexOf(marker);
+    if (idx === -1) return;
+
+    const before = content.slice(0, idx).replace(/\s+$/, "");
+    const after = content.slice(idx + marker.length);
+    const opts = [];
+    after.split(/\n/).forEach(line => {
+      const m = line.trim().match(/^(\d+)\s*[、.．,，:：]\s*(.+)$/);
+      if (m) opts.push({ num: m[1], text: m[2].trim() });
+    });
+    if (!opts.length) return;
+
+    bubble.textContent = before;
+
+    const bar = document.createElement("div");
+    bar.className = "optbar";
+    opts.forEach(o => {
+      const b = document.createElement("button");
+      b.className = "optbtn";
+      b.type = "button";
+      b.dataset.num = o.num;
+      b.dataset.text = o.text;
+      b.innerHTML = '<span class="num">' + o.num + '、</span>' + escapeHtml(o.text);
+      b.onclick = () => {
+        if (busy) return;
+        if (/自由行动/.test(o.text)) {
+          input.focus();
+          input.scrollIntoView({behavior:"smooth", block:"center"});
+          return;
+        }
+        send(o.num);
+      };
+      bar.appendChild(b);
+    });
+    wrap.appendChild(bar);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    })[c]);
+  }
+
+  // ===== 控制选项按钮可用性：仅最后一条 AI 消息的选项可点 =====
+  function refreshOptionButtons() {
+    const bars = chat.querySelectorAll(".optbar");
+    bars.forEach((bar, i) => {
+      const isLast = i === bars.length - 1;
+      bar.querySelectorAll(".optbtn").forEach(b => {
+        b.disabled = !isLast || busy;
+      });
+    });
+  }
+
+  $("btn-save").onclick = () => {
+    localStorage.setItem(LS_HIS, JSON.stringify(messages));
+    flash("已存档");
+  };
+  $("btn-load").onclick = () => {
+    const raw = localStorage.getItem(LS_HIS);
+    if (!raw) return flash("没有找到存档");
+    try {
+      messages = JSON.parse(raw);
+      rebuildChat();
+      flash("读档成功");
+    } catch { flash("读档失败"); }
+  };
+  $("btn-export").onclick = () => {
+    const text = messages.map(m =>
+      (m.role === "user" ? "【我】\n" : "【GM】\n") + m.content
+    ).join("\n\n" + "─".repeat(40) + "\n\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "寒蝉雨传-" + new Date().toISOString().slice(0,10) + ".txt";
+    a.click();
+  };
+  $("btn-reset").onclick = () => {
+    if (!confirm("确定要重新开始吗？当前对话将被清空（存档仍保留）。")) return;
+    messages = [];
+    chat.innerHTML = "";
+    localStorage.removeItem(LS_HIS);
+    startGame();
+  };
+
+  function flash(text) {
+    const b = addMsg("sys", text);
+    setTimeout(() => b.parentElement.remove(), 1800);
+  }
+
+  async function callAPI() {
+    if (busy) return;
+    const cfg = loadCfg();
+    if (!cfg.url || !cfg.key || !cfg.model) {
+      openSettings(true);
+      return;
+    }
+
+    busy = true;
+    btnSend.disabled = true;
+    btnStop.style.display = "";
+    refreshOptionButtons();
+
+    const bubble = addMsg("ai", "");
+    const wrap = bubble.parentElement;
+    const typing = document.createElement("span");
+    typing.className = "typing";
+    typing.textContent = "正在生成";
+    bubble.appendChild(typing);
+
+    abortCtrl = new AbortController();
+    let acc = "";
+
+    const stashOn = getStash() === "on";
+    const sysContent = SYSTEM_PROMPT + "\n\n【当前偷衣机制状态】" + 
+      (stashOn 
+        ? "开启。GM应正常按七之二执行，描写保持含蓄。" 
+        : "关闭。GM严禁描写任何偷私人衣物的行为，包括但不限于偷袜子、鞋子、内衣内裤等。");
+
+    try {
+      const history = messages.slice(-cfg.history);
+      const res = await fetch(cfg.url + "/chat/completions", {
+        method: "POST",
+        signal: abortCtrl.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + cfg.key
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          stream: true,
+          messages: [
+            { role: "system", content: sysContent },
+            ...history
+          ]
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error("HTTP " + res.status + "\n" + errText.slice(0, 500));
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          const s = line.trim();
+          if (!s.startsWith("data:")) continue;
+          const data = s.slice(5).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const json = JSON.parse(data);
+            const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content || "";
+            if (delta) {
+              acc += delta;
+              if (typing.parentNode) typing.remove();
+              bubble.textContent = acc;
+              scrollBottom();
+            }
+          } catch (e) { }
+        }
+      }
+
+      if (typing.parentNode) typing.remove();
+      if (!acc) bubble.textContent = "（AI 没有返回内容）";
+
+      // 流式结束后解析选项
+      if (acc) extractOptions(bubble);
+
+      messages.push({ role: "assistant", content: acc });
+      autoSave();
+
+      if (rosterDlg.open) {
+        const active = document.querySelector("#roster-dlg .tab.active");
+        renderRoster(active ? active.dataset.tab : "all");
+      }
+
+    } catch (e) {
+      if (typing.parentNode) typing.remove();
+      if (e.name === "AbortError") {
+        bubble.textContent = acc + "\n\n（已停止）";
+        if (acc) {
+          extractOptions(bubble);
+          messages.push({ role: "assistant", content: acc });
+        }
+        autoSave();
+      } else {
+        bubble.textContent = "⚠️ 请求失败：\n" + e.message +
+          "\n\n请检查：\n1、API 地址是否正确（应以 /v1 或 /v4 结尾）\n2、Key 是否有效\n3、模型名是否存在\n4、网络是否能访问该服务";
+      }
+    } finally {
+      busy = false;
+      btnSend.disabled = false;
+      btnStop.style.display = "none";
+      abortCtrl = null;
+      refreshOptionButtons();
+      scrollBottom();
+    }
+  }
+
+  async function send(text) {
+    if (busy) return;
+    text = (text || input.value).trim();
+    if (!text) return;
+
+    const cfg = loadCfg();
+    if (!cfg.url || !cfg.key || !cfg.model) {
+      openSettings(true);
+      return;
+    }
+
+    const stashCmd = text.match(/[（(]\s*(开启|关闭)偷衣机制\s*[）)]/);
+    if (stashCmd) {
+      const on = stashCmd[1] === "开启";
+      setStash(on ? "on" : "off");
+      flash("偷衣机制已" + (on ? "开启" : "关闭"));
+      input.value = "";
+      input.style.height = "auto";
+      return;
+    }
+
+    addMsg("user", text);
+    messages.push({ role: "user", content: text });
+    autoSave();
+    input.value = "";
+    input.style.height = "auto";
+
+    await callAPI();
+  }
+
+  function rebuildChat() {
+    chat.innerHTML = "";
+    messages.forEach(m => {
+      const bubble = addMsg(m.role === "assistant" ? "ai" : "user", m.content);
+      if (m.role === "assistant") extractOptions(bubble);
+    });
+    refreshOptionButtons();
+    autoSave();
+  }
+
+  function undoLast() {
+    if (busy) return flash("正在生成中，请先停止");
+    if (messages.length === 0) return flash("没有可撤回的内容");
+
+    if (messages[messages.length - 1].role === "assistant") {
+      messages.pop();
+    }
+
+    let userText = "";
+    if (messages.length > 0 && messages[messages.length - 1].role === "user") {
+      userText = messages.pop().content;
+    }
+
+    rebuildChat();
+
+    if (userText) {
+      input.value = userText;
+      input.focus();
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 180) + "px";
+      flash("已撤回，可修改后重新发送");
+    } else {
+      flash("已撤回上一条回复");
+    }
+  }
+
+  async function regenerate() {
+    if (busy) return flash("正在生成中，请先停止");
+    if (messages.length === 0) return flash("没有可重说的内容");
+
+    if (messages[messages.length - 1].role === "assistant") {
+      messages.pop();
+    }
+
+    if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+      return flash("没有可重说的内容");
+    }
+
+    rebuildChat();
+    await callAPI();
+  }
+
+  btnSend.onclick = () => send();
+  btnStop.onclick = () => abortCtrl && abortCtrl.abort();
+  $("btn-undo").onclick = () => undoLast();
+  $("btn-regen").onclick = () => regenerate();
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      send();
+    }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 180) + "px";
+  });
+
+  document.querySelectorAll(".quick button").forEach(b => {
+    b.onclick = () => {
+      const cmd = b.dataset.cmd;
+      if (cmd === "（查看好感度）" || cmd === "（查看后宫）" || cmd === "（查看徒弟名录）") {
+        $("btn-roster").click();
+        if (cmd === "（查看后宫）") {
+          const t = document.querySelector('#roster-dlg .tab[data-tab="harem"]');
+          if (t) t.click();
+        }
+        return;
+      }
+      send(cmd);
+    };
+  });
+
+  function startGame() {
+    const cfg = loadCfg();
+    if (!cfg.url || !cfg.key || !cfg.model) {
+      addMsg("sys", "首次使用请先在右上角「⚙ 设置」中填写 API 信息");
+      openSettings(true);
+      return;
+    }
+    send("（开始游戏。请先列出可选时间段，等待我选择。）");
+  }
+
+  updateStashBtn();
+
+  const cfg = loadCfg();
+  if (!cfg.url || !cfg.key || !cfg.model) {
+    addMsg("sys", "欢迎来到《斗罗大陆 · 寒蝉雨传》。请先在右上角「⚙ 设置」中填写 API 信息。");
+    openSettings(true);
+  } else {
+    const raw = localStorage.getItem(LS_HIS);
+    if (raw) {
+      try {
+        const arr = JSON.parse(raw);
+        if (arr.length) {
+          messages = arr;
+          rebuildChat();
+        }
+      } catch (e) { }
+    }
+    if (messages.length === 0) startGame();
+  }
+})();
+</script>
+</body>
+<script> if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => {}); }); } </script>
+</html>
